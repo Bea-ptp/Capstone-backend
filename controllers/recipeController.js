@@ -1,72 +1,52 @@
-import Recipe from '../models/Recipe.js';
+//  IMPORTS
+import Recipe from "../models/Recipe.js";
 
-// GET all recipes
-export const getRecipes = async (req, res) => {
+//  GET ALL RECIPES
+export async function getRecipes(req, res) {
   try {
-    const recipes = await Recipe.find({ createdBy: req.user._id }).populate('spicesUsed');
+    const recipes = await Recipe.find({ createdBy: req.user._id });
     res.json(recipes);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
-};
+}
 
-// CREATE recipe
-export const createRecipe = async (req, res) => {
+// CREATE RECIPE
+export async function createRecipe(req, res) {
   try {
-    const { title, ingredients, instructions, image, spicesUsed } = req.body;
-
     const recipe = await Recipe.create({
-      title,
-      ingredients,
-      instructions,
-      image,
-      spicesUsed,
-      createdBy: req.user._id
+      ...req.body,
+      createdBy: req.user._id,
     });
-
     res.status(201).json(recipe);
-
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(400).json({ message: "Invalid data", error: err.message });
   }
-};
+}
 
-// UPDATE recipe
-export const updateRecipe = async (req, res) => {
+// UPDATE RECIPE
+export async function updateRecipe(req, res) {
   try {
-    const recipe = await Recipe.findById(req.params.id);
-
-    if (!recipe) return res.status(404).json({ message: 'Recipe not found' });
-
-    if (recipe.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(401).json({ message: 'Not authorized' });
-    }
-
-    const updated = await Recipe.findByIdAndUpdate(req.params.id, req.body, { new: true });
-
-    res.json(updated);
-
+    const recipe = await Recipe.findOneAndUpdate(
+      { _id: req.params.id, createdBy: req.user._id },
+      req.body,
+      { new: true }
+    );
+    res.json(recipe);
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(400).json({ message: "Update failed", error: err.message });
   }
-};
+}
 
-// DELETE recipe
-export const deleteRecipe = async (req, res) => {
+// DELETE RECIPE
+export async function deleteRecipe(req, res) {
   try {
-    const recipe = await Recipe.findById(req.params.id);
-
-    if (!recipe) return res.status(404).json({ message: 'Recipe not found' });
-
-    if (recipe.createdBy.toString() !== req.user._id.toString()) {
-      return res.status(401).json({ message: 'Not authorized' });
-    }
-
-    await recipe.deleteOne();
-
-    res.json({ message: 'Recipe deleted' });
-
+    await Recipe.findOneAndDelete({
+      _id: req.params.id,
+      createdBy: req.user._id,
+    });
+    res.json({ message: "Recipe deleted" });
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    res.status(400).json({ message: "Delete failed", error: err.message });
   }
-};
+}
